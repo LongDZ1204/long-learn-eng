@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Mastery V3 - Custom Data</title>
+    <style>
+        /* CSS STYLES - Giao diện sạch, tập trung */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; color: #1c1e21; max-width: 800px; margin: 0 auto; padding: 20px; }
+        h1 { color: #1877f2; text-align: center; margin-bottom: 5px; }
+        .subtitle { text-align: center; color: #65676b; margin-bottom: 20px; font-size: 0.9em; }
+        
+        /* Navigation */
+        .nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 20px; }
+        .btn { background: #fff; border: 1px solid #ddd; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn:hover { background: #e4e6eb; transform: translateY(-1px); }
+        .btn.active { background: #1877f2; color: white; border-color: #1877f2; }
+        
+        /* Main Card */
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; display: none; min-height: 300px; }
+        .card.active { display: block; }
+        
+        /* Elements */
+        .word-display { font-size: 2.2em; font-weight: 800; color: #333; margin: 20px 0; line-height: 1.2; }
+        .phonetic { color: #65676b; font-style: italic; font-size: 1.1em; margin-bottom: 15px; }
+        .meaning { font-size: 1.3em; color: #1877f2; margin-top: 10px; font-weight: 500; }
+        .category-tag { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 0.8em; font-weight: bold; color: white; margin-bottom: 10px; }
+        
+        /* Inputs & Feedback */
+        input[type="text"] { width: 90%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 1.1em; margin-bottom: 10px; outline: none; }
+        input[type="text"]:focus { border-color: #1877f2; }
+        .feedback { margin-top: 15px; padding: 15px; border-radius: 8px; font-weight: bold; text-align: left; line-height: 1.5; }
+        .correct { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .incorrect { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        
+        /* Micro Button */
+        .btn-mic { background: #fa3e3e; color: white; border: none; font-size: 1.5em; width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 10px auto; cursor: pointer; transition: 0.2s; }
+        .btn-mic:hover { transform: scale(1.1); }
+        .btn-mic.recording { animation: pulse 1.5s infinite; background: #c00; }
+        
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(255, 0, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); } }
+    </style>
+</head>
+<body>
+
+    <h1>Health Topic Mastery V3</h1>
+    <p class="subtitle">Vocabulary • Pronunciation • Sentence Structures</p>
+    
+    <div class="nav">
+        <button class="btn active" onclick="setTab('vocab')">1. Học Từ Vựng</button>
+        <button class="btn" onclick="setTab('pronounce')">2. Check Phát Âm</button>
+        <button class="btn" onclick="setTab('writing')">3. Luyện Viết Câu</button>
+        <button class="btn" onclick="setTab('speaking')">4. Luyện Phản Xạ</button>
+    </div>
+
+    <div id="vocab" class="card active">
+        <h3>Flashcards (Normal & Serious Diseases)</h3>
+        <div style="height: 220px; border: 2px dashed #ddd; border-radius: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; margin-bottom: 20px; position: relative;" onclick="flipV()">
+            <span id="v-tag" class="category-tag" style="background: #999;">Category</span>
+            <div id="v-front" class="word-display">Start</div>
+            <div id="v-back" class="meaning" style="display:none;">Bắt đầu</div>
+            <div style="font-size: 0.8em; color: #999; margin-top: 20px;">(Chạm để lật)</div>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between;">
+            <button class="btn" onclick="prevV()">← Quay lại</button>
+            <button class="btn" style="background: #42b72a; color: white; border:none;" onclick="nextV()">Từ tiếp theo →</button>
+        </div>
+    </div>
+
+    <div id="pronounce" class="card">
+        <h3>Luyện Phát Âm (Từ Khó)</h3>
+        <p style="color:#666">Hệ thống sẽ nghe và chấm điểm phát âm của bạn.</p>
+        
+        <div class="word-display" id="p-word">Diarrhea</div>
+        <div class="phonetic" id="p-ipa">/ˌdaɪəˈriːə/</div>
+        <div class="meaning" id="p-meaning">Tiêu chảy</div>
+        
+        <div>
+            <button class="btn" onclick="playAudio(pronounceData[state.pIndex].en)">🔊 Nghe mẫu</button>
+        </div>
+        
+        <button class="btn-mic" id="btn-mic" onclick="toggleRecord()">🎙️</button>
+        <p id="mic-status">Bấm micro để đọc</p>
+        
+        <div id="p-result" class="feedback" style="display:none;"></div>
+        
+        <div style="margin-top:20px;">
+            <button class="btn" onclick="nextP()">Từ khác >></button>
+        </div>
+    </div>
+
+    <div id="writing" class="card">
+        <h3>Xây Dựng Câu (Templates)</h3>
+        <p id="w-guide" style="font-style: italic; color: #555; font-size: 0.9em; margin-bottom: 10px;">Template...</p>
+        <p id="w-vn" style="font-weight: bold; font-size: 1.2em; color: #333; margin-bottom: 15px;">...</p>
+        
+        <input type="text" id="w-input" placeholder="Gõ câu tiếng Anh hoàn chỉnh..." onkeydown="if(event.key==='Enter') checkW()">
+        
+        <button class="btn" style="background: #1877f2; color: white; border:none;" onclick="checkW()">Kiểm tra</button>
+        <div id="w-feedback" class="feedback" style="display:none;"></div>
+        
+        <div style="margin-top: 15px;">
+            <button class="btn" onclick="nextW()">Câu tiếp theo >></button>
+        </div>
+    </div>
+
+    <div id="speaking" class="card">
+        <h3>Mô Phỏng Hỏi - Đáp</h3>
+        <p style="color: #666;">Máy sẽ đóng vai người hỏi (Interviewer).</p>
+        
+        <div class="word-display" id="s-q" style="font-size: 1.4em; color: #1877f2; text-align: left;">Question...</div>
+        
+        <button class="btn" onclick="playAudio(document.getElementById('s-q').innerText)">🔊 Nghe Câu Hỏi</button>
+        
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+        
+        <p style="text-align: left; font-weight: bold;">Gợi ý trả lời (Template):</p>
+        <div id="s-template" style="text-align: left; color: #555; font-style: italic; margin-bottom: 10px;"></div>
+        
+        <button class="btn" onclick="toggleSAns()">👁️ Xem Đáp Án Mẫu</button>
+        <div id="s-a" class="meaning" style="display:none; text-align: left; background: #f7f7f7; padding: 15px; border-radius: 8px; margin-top: 10px; font-size: 1.1em;"></div>
+        
+        <div style="margin-top:20px;">
+            <button class="btn" onclick="nextS()">Câu hỏi khác >></button>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // DATA KHO - CẬP NHẬT THEO YÊU CẦU CỦA USER
+        // ==========================================
+        
+        // 1. Full Vocabulary (Normal, Serious, Causes, Solutions)
+        const vocabData = [
+            // NORMAL
+            {en: "Headache", vi: "Đau đầu", tag: "Normal Disease"},
+            {en: "Stomachache", vi: "Đau bụng", tag: "Normal Disease"},
+            {en: "Backache", vi: "Đau lưng (lỗi cũ: back paint)", tag: "Normal Disease"}, // Fixed typo
+            {en: "Toothache", vi: "Đau răng", tag: "Normal Disease"},
+            {en: "Flu", vi: "Cảm cúm (Catch a flu)", tag: "Normal Disease"},
+            {en: "Fever", vi: "Sốt", tag: "Normal Disease"},
+            {en: "Sore throat", vi: "Đau họng", tag: "Normal Disease"},
+            {en: "Sore eyes", vi: "Đau mắt", tag: "Normal Disease"},
+            {en: "Cough", vi: "Ho", tag: "Normal Disease"},
+            {en: "Runny nose", vi: "Sổ mũi", tag: "Normal Disease"},
+            {en: "Diarrhea", vi: "Tiêu chảy", tag: "Normal Disease"},
+            {en: "Food poisoning", vi: "Ngộ độc thức ăn", tag: "Normal Disease"},
+            
+            // SERIOUS
+            {en: "Obesity", vi: "Béo phì (lỗi cũ: obesty)", tag: "Serious Disease"}, // Fixed typo
+            {en: "Diabetes", vi: "Tiểu đường", tag: "Serious Disease"},
+            {en: "Asthma", vi: "Hen suyễn", tag: "Serious Disease"},
+            {en: "Depression", vi: "Trầm cảm", tag: "Serious Disease"},
+            {en: "Alzheimer’s disease", vi: "Mất trí nhớ", tag: "Serious Disease"},
+            {en: "Lung diseases", vi: "Bệnh phổi", tag: "Serious Disease"},
+            {en: "Kidney diseases", vi: "Bệnh thận (lỗi cũ: kedney)", tag: "Serious Disease"}, // Fixed typo
+            {en: "Liver diseases", vi: "Bệnh gan", tag: "Serious Disease"},
+            {en: "Heart diseases", vi: "Bệnh tim mạch (Cardiovascular)", tag: "Serious Disease"},
+            {en: "Cancer", vi: "Ung thư", tag: "Serious Disease"},
+            {en: "High blood pressure", vi: "Huyết áp cao", tag: "Serious Disease"},
+            {en: "Arthritis", vi: "Viêm khớp", tag: "Serious Disease"},
+            
+            // CAUSES
+            {en: "Have a sedentary lifestyle", vi: "Lối sống thụ động/ít vận động", tag: "Cause"},
+            {en: "Neglect personal hygiene", vi: "Lơ là vệ sinh cá nhân", tag: "Cause"},
+            {en: "Overwork muscles", vi: "Làm việc quá sức cơ bắp", tag: "Cause"},
+            {en: "Have poor posture", vi: "Tư thế xấu (ngồi/đi đứng)", tag: "Cause"},
+            {en: "Not get enough physical exercise", vi: "Không tập thể dục đủ", tag: "Cause"},
+            
+            // SOLUTIONS
+            {en: "Have a bed rest", vi: "Nghỉ ngơi trên giường", tag: "Solution"},
+            {en: "Go to the pharmacy", vi: "Đi nhà thuốc", tag: "Solution"},
+            {en: "Have an injection", vi: "Đi tiêm/chích", tag: "Solution"},
+            {en: "Undergo a surgery", vi: "Phẫu thuật", tag: "Solution"},
+            {en: "Have a blood test", vi: "Xét nghiệm máu", tag: "Solution"}
+        ];
+
+        // 2. Pronunciation Focus (Lọc từ khó phát âm)
+        const pronounceData = [
+            {en: "Diarrhea", ipa: "/ˌdaɪəˈriːə/", vi: "Tiêu chảy"},
+            {en: "Obesity", ipa: "/əʊˈbiːsəti/", vi: "Béo phì"},
+            {en: "Asthma", ipa: "/ˈæzmə/", vi: "Hen suyễn (âm 'th' câm)"},
+            {en: "Arthritis", ipa: "/ɑːrˈθraɪtɪs/", vi: "Viêm khớp"},
+            {en: "Diabetes", ipa: "/ˌdaɪəˈbiːtiːz/", vi: "Tiểu đường"},
+            {en: "Alzheimer", ipa: "/ˈælts.haɪ.mər/", vi: "Bệnh Alzheimer"},
+            {en: "Stomachache", ipa: "/ˈstʌmək-eɪk/", vi: "Đau bao tử"},
+            {en: "Cardiovascular", ipa: "/ˌkɑːrdioʊˈvæskjələr/", vi: "Tim mạch"},
+            {en: "Sedentary", ipa: "/ˈsednteri/", vi: "Thụ động"},
+            {en: "Hygiene", ipa: "/ˈhaɪdʒiːn/", vi: "Vệ sinh"}
+        ];
+
+        // 3. Writing Templates (Dựa trên cấu trúc User cung cấp)
+        const writingData = [
+            {
+                guide: "Template: I've often got [DISEASE] when [CAUSE]. [TREATMENT]",
+                vi: "Tôi thường bị ho khi tôi uống quá nhiều nước lạnh. Tôi thường đi nhà thuốc.",
+                en: "I've often got a cough when I drink too much cold water. I often go to the pharmacy." // User example
+            },
+            {
+                guide: "Template: Old people have often got [DISEASE] because [REASON]. [TREATMENT]",
+                vi: "Người già thường bị viêm khớp vì họ lười vận động. Họ nên đi tiêm.",
+                en: "Old people have often got arthritis because they have a sedentary lifestyle. They should have an injection."
+            },
+            {
+                guide: "Template: I dislike [DISEASE] most because [REASON].",
+                vi: "Tôi ghét bệnh béo phì nhất vì nó làm tôi thấy xấu hổ.",
+                en: "I dislike obesity most because it makes me feel ashamed."
+            },
+            {
+                guide: "Template: Young people are getting more diseases simply because they [CAUSE].",
+                vi: "Người trẻ mắc nhiều bệnh hơn đơn giản vì họ lơ là vệ sinh cá nhân.",
+                en: "Young people are getting more diseases simply because they neglect personal hygiene."
+            },
+            {
+                guide: "Template: I think our immune system is getting weaker because we [CAUSE].",
+                vi: "Tôi nghĩ hệ miễn dịch chúng ta đang yếu đi vì chúng ta không tập thể dục đủ.",
+                en: "I think our immune system is getting weaker because we do not get enough physical exercise."
+            }
+        ];
+
+        // 4. Speaking Patterns (Dựa trên câu hỏi User cung cấp)
+        const speakingData = [
+            {
+                q: "What is the disease that you often get?",
+                template: "I've often got [DISEASE] when [TIME/CAUSE]. [TREATMENT]",
+                a: "I've often got a headache when I work late at night. I usually have a bed rest."
+            },
+            {
+                q: "Why are some young people getting more and more diseases?",
+                template: "Young people are getting more diseases simply because they [CAUSE 1, 2 and 3].",
+                a: "Young people are getting more diseases simply because they have a sedentary lifestyle, eat fast food, and neglect personal hygiene."
+            },
+            {
+                q: "Do you think people living in big cities are having bad health?",
+                template: "I think people living in big cities have bad health mostly because they [CAUSE].",
+                a: "I think people living in big cities have bad health mostly because they breath in smoke and live in a polluted environment."
+            },
+            {
+                q: "What diseases can we avoid?",
+                template: "We can avoid [DISEASE] by [ACTION V-ING].",
+                a: "We can avoid heart diseases by doing exercise on a regular basis."
+            },
+            {
+                q: "Who tends to get more diseases? Why?",
+                template: "I think [WHO] tends to get more diseases partly because they [CAUSE].",
+                a: "I think office workers tend to get more diseases partly because they have poor posture and sit too much."
+            }
+        ];
+
+        // ==========================================
+        // SYSTEM LOGIC (ENGINE)
+        // ==========================================
+        let state = { pIndex: 0, vIndex: 0, wIndex: 0, sIndex: 0, recording: false };
+        let recognition;
+
+        function setTab(id) {
+            document.querySelectorAll('.card').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav .btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        function playAudio(text) {
+            let u = new SpeechSynthesisUtterance(text);
+            u.lang = 'en-US'; u.rate = 0.9;
+            window.speechSynthesis.speak(u);
+        }
+
+        // --- VOCAB ---
+        function loadV() {
+            let d = vocabData[state.vIndex];
+            document.getElementById('v-tag').innerText = d.tag;
+            document.getElementById('v-tag').style.background = d.tag.includes('Serious') ? '#e74c3c' : (d.tag.includes('Cause') ? '#f39c12' : '#3498db');
+            document.getElementById('v-front').innerText = d.en;
+            document.getElementById('v-back').innerText = d.vi;
+            document.getElementById('v-back').style.display = 'none';
+        }
+        function flipV() {
+            let back = document.getElementById('v-back');
+            back.style.display = back.style.display === 'none' ? 'block' : 'none';
+        }
+        function nextV() { state.vIndex = (state.vIndex + 1) % vocabData.length; loadV(); }
+        function prevV() { state.vIndex = (state.vIndex - 1 + vocabData.length) % vocabData.length; loadV(); }
+
+        // --- PRONOUNCE ---
+        function toggleRecord() {
+            if (!recognition) initVoice();
+            if (state.recording) recognition.stop();
+            else recognition.start();
+        }
+        function initVoice() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SR();
+                recognition.lang = 'en-US';
+                recognition.onstart = () => { 
+                    state.recording = true; 
+                    document.getElementById('btn-mic').classList.add('recording');
+                    document.getElementById('mic-status').innerText = "Đang nghe...";
+                };
+                recognition.onend = () => { 
+                    state.recording = false; 
+                    document.getElementById('btn-mic').classList.remove('recording');
+                    document.getElementById('mic-status').innerText = "Bấm để nói";
+                };
+                recognition.onresult = (e) => {
+                    let transcript = e.results[0][0].transcript.toLowerCase();
+                    let target = pronounceData[state.pIndex].en.toLowerCase();
+                    let box = document.getElementById('p-result');
+                    box.style.display = 'block';
+                    if (transcript.includes(target)) {
+                        box.className = "feedback correct";
+                        box.innerHTML = `✅ Tuyệt vời! Máy nghe: "${transcript}"`;
+                    } else {
+                        box.className = "feedback incorrect";
+                        box.innerHTML = `❌ Chưa chuẩn. Máy nghe: "${transcript}"`;
+                    }
+                };
+            } else { alert("Trình duyệt không hỗ trợ Voice API. Dùng Chrome/Edge nhé!"); }
+        }
+        function nextP() { 
+            state.pIndex = (state.pIndex + 1) % pronounceData.length; 
+            document.getElementById('p-result').style.display='none';
+            let d = pronounceData[state.pIndex];
+            document.getElementById('p-word').innerText = d.en;
+            document.getElementById('p-ipa').innerText = d.ipa;
+            document.getElementById('p-meaning').innerText = d.vi;
+        }
+
+        // --- WRITING ---
+        function loadW() {
+            let d = writingData[state.wIndex];
+            document.getElementById('w-guide').innerText = d.guide;
+            document.getElementById('w-vn').innerText = d.vi;
+            document.getElementById('w-input').value = "";
+            document.getElementById('w-feedback').style.display = 'none';
+        }
+        function checkW() {
+            let user = document.getElementById('w-input').value.trim().toLowerCase().replace(/[.,]/g, '');
+            let correct = writingData[state.wIndex].en.toLowerCase().replace(/[.,]/g, '');
+            let box = document.getElementById('w-feedback');
+            box.style.display = 'block';
+            if (user === correct) {
+                box.className = "feedback correct"; box.innerText = "✅ Chính xác hoàn toàn!";
+            } else {
+                box.className = "feedback incorrect"; box.innerHTML = `❌ Sai rồi.<br><b>Đáp án:</b> ${writingData[state.wIndex].en}`;
+            }
+        }
+        function nextW() { state.wIndex = (state.wIndex + 1) % writingData.length; loadW(); }
+
+        // --- SPEAKING ---
+        function loadS() {
+            let d = speakingData[state.sIndex];
+            document.getElementById('s-q').innerText = d.q;
+            document.getElementById('s-template').innerText = d.template;
+            document.getElementById('s-a').innerText = d.a;
+            document.getElementById('s-a').style.display = 'none';
+        }
+        function toggleSAns() {
+            let a = document.getElementById('s-a');
+            a.style.display = a.style.display === 'none' ? 'block' : 'none';
+        }
+        function nextS() { state.sIndex = (state.sIndex + 1) % speakingData.length; loadS(); }
+
+        // START
+        window.onload = () => { loadV(); nextP(); loadW(); loadS(); };
+
+    </script>
+</body>
+</html>
